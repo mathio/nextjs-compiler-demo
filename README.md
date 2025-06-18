@@ -1,36 +1,138 @@
+# Lingo.dev Compiler 💚 Next.js
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-## Getting Started
+It implements [Lingo.dev Compiler](https://lingo.dev/en/compiler) to localize the project.
 
-First, run the development server:
+Lingo.dev Compiler docs for Next.js implementation: https://lingo.dev/en/compiler/frameworks/nextjs
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## Setup
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+1. Bootstrap new Next.js app:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+   ```sh
+   $ npx create-next-app@latest
+   Need to install the following packages:
+   create-next-app@15.3.3
+   Ok to proceed? (y)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+   ✔ What is your project named? … nextjs-compiler-demo
+   ✔ Would you like to use TypeScript? … No / Yes
+   ✔ Would you like to use ESLint? … No / Yes
+   ✔ Would you like to use Tailwind CSS? … No / Yes
+   ✔ Would you like your code inside a `src/` directory? … No / Yes
+   ✔ Would you like to use App Router? (recommended) … No / Yes
+   ✔ Would you like to use Turbopack for `next dev`? … No / Yes
+   ✔ Would you like to customize the import alias (`@/*` by default)? … No / Yes
+   Creating a new Next.js app in /Users/m/work/nextjs-compiler-demo.
+   ```
 
-## Learn More
+2. Install [lingo.dev](https://github.com/lingodotdev/lingo.dev/) dependency:
 
-To learn more about Next.js, take a look at the following resources:
+   ```sh
+   $ npm add lingo.dev
+   ```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+3. Configure Lingo.dev Compiler - update `next.config.js` file
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+   ```tsx
+   import type { NextConfig } from "next";
+   import lingo from "lingo.dev/compiler";
 
-## Deploy on Vercel
+   const nextConfig: NextConfig = {
+     /* Next.js config options here */
+   };
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+   export default lingo.next({
+     sourceLocale: "en",
+     targetLocales: ["es", "fr", "de"],
+     models: {
+       "*:*": "groq:mistral-saba-24b",
+       "*:es": "meta-llama/llama-4-maverick-17b-128e-instruct",
+     },
+   })(nextConfig);
+   ```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+   This example uses [suggested Groq model](https://lingo.dev/en/compiler/configuration/advanced#suggested-groq-models) because [Groq](https://groq.com/) is fast. You can use any of the [supported LLM providers](https://lingo.dev/en/compiler/how-it-works#llm-providers).
+
+4. Update `src/layout.tsx`:
+
+   a. Add import on top of the file
+
+   ```tsx
+   import { LingoProvider, loadDictionary } from "lingo.dev/react/rsc";
+   ```
+
+   b. Wrap the `<html>` element in `RootLayout` component with `LingoProvider`
+
+   ```tsx
+   export default function RootLayout({
+     children,
+   }: Readonly<{
+     children: React.ReactNode;
+   }>) {
+     return (
+       <LingoProvider loadDictionary={(locale) => loadDictionary(locale)}>
+         <html lang="en">
+           <body
+             className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+           >
+             {children}
+           </body>
+         </html>
+       </LingoProvider>
+     );
+   }
+   ```
+
+5. Add `LocaleSwitcher` component to your app (eg. to `src/layout.tsx`) to change your app language:
+
+   a. Import on top of the file
+
+   ```tsx
+   import { LocaleSwitcher } from "lingo.dev/react/client";
+   ```
+
+   b. Add the component in `RootLayout` component and specify available locales:
+
+   ```tsx
+   <LocaleSwitcher locales={["en", "es", "fr", "de"]} />
+   ```
+
+6. Setup [Groq LLM provider](https://groq.com/) since it was configured (see step 3. above).
+
+   ```sh
+   $ export GROQ_API_KEY=***
+   ```
+
+   You need to create [Groq](https://groq.com/) account to obtain the API key. You might need to confirm your email address and accept Groq terms before you are able to use their API.
+
+   Alternatively you can use any of the [supported LLM providers](https://lingo.dev/en/compiler/how-it-works#llm-providers).
+
+7. Run `npm run dev` in your terminal
+
+   Terminal shows output related to Next.js and Lingo.dev Compiler:
+
+   ```sh
+   $ npm run dev
+
+   > nextjs-compiler-demo@0.1.0 dev /Users/m/work/nextjs-compiler-demo
+   > next dev
+
+     ▲ Next.js 15.3.3
+     - Local:        http://localhost:3000
+     - Network:      http://172.22.77.132:3000
+
+   ✓ Starting...
+   ℹ️  Starting Lingo.dev compiler...
+
+
+   🔑  LLM API keys detected for configured providers: groq.
+   ✨
+   ```
+
+8. Open http://localhost:3000
+
+   Browser displays default Next.js page with an unstyled `<select>` to change language in top left:
+
+   ![localhost](localhost.png)
