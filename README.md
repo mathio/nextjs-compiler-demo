@@ -8,7 +8,7 @@ Lingo.dev Compiler docs for Next.js implementation: https://lingo.dev/en/compile
 
 ## Setup
 
-1. Bootstrap new Next.js app:
+1. Bootstrap new Next.js app **without Turbopack**:
 
    ```sh
    $ npx create-next-app@latest
